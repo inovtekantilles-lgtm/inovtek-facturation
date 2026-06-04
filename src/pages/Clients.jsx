@@ -20,6 +20,7 @@ export default function Clients() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState(null)
+  const [error, setError] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -34,25 +35,37 @@ export default function Clients() {
     `${c.nom} ${c.prenom} ${c.entreprise} ${c.email}`.toLowerCase().includes(search.toLowerCase())
   )
 
-  const openNew = () => { setForm(EMPTY_FORM); setEditId(null); setShowModal(true) }
+  const openNew = () => { setForm(EMPTY_FORM); setEditId(null); setError(''); setShowModal(true) }
   const openEdit = (c) => {
     setForm({ nom: c.nom || '', prenom: c.prenom || '', entreprise: c.entreprise || '', email: c.email || '', telephone: c.telephone || '', adresse: c.adresse || '', kbis: c.kbis || '', iban: c.iban || '', type: c.type || 'ponctuel', notes: c.notes || '' })
     setEditId(c.id)
+    setError('')
     setShowModal(true)
   }
 
   const save = async () => {
-    if (!form.nom || !form.email || !form.entreprise) return
-    setSaving(true)
-    if (editId) {
-      await supabase.from('clients').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editId)
-    } else {
-      await supabase.from('clients').insert(form)
+    if (!form.nom || !form.email || !form.entreprise) {
+      setError('Les champs Nom, Email et Entreprise sont obligatoires.')
+      return
     }
-    await load()
-    setSaving(false)
-    setShowModal(false)
-    setEditId(null)
+    setError('')
+    setSaving(true)
+    try {
+      if (editId) {
+        const { error } = await supabase.from('clients').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('clients').insert(form)
+        if (error) throw error
+      }
+      await load()
+      setShowModal(false)
+      setEditId(null)
+    } catch (err) {
+      setError(err.message || 'Erreur lors de l\'enregistrement. Vérifiez votre connexion.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const deleteClient = async (id) => {
@@ -158,7 +171,7 @@ export default function Clients() {
       {showModal && (
         <Modal onClose={() => setShowModal(false)} size="lg">
           <ModalHeader title={editId ? 'Modifier le client' : 'Nouveau client professionnel'} onClose={() => setShowModal(false)} />
-          <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="p-6 space-y-4 flex-1 overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
               <Input label="Nom" value={form.nom} onChange={v => setForm({ ...form, nom: v })} required />
               <Input label="Prénom" value={form.prenom} onChange={v => setForm({ ...form, prenom: v })} />
@@ -176,9 +189,12 @@ export default function Clients() {
             <Input label="IBAN (confidentiel — jamais affiché sur les documents)" value={form.iban} onChange={v => setForm({ ...form, iban: v })} placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" hint="Visible uniquement sur la fiche client, protégé en base de données." />
             <Textarea label="Notes internes" value={form.notes} onChange={v => setForm({ ...form, notes: v })} placeholder="Informations complémentaires..." />
           </div>
-          <div className="flex justify-end gap-3 border-t border-[#262629] px-6 py-4">
-            <Btn variant="secondary" onClick={() => setShowModal(false)}>Annuler</Btn>
-            <Btn onClick={save} disabled={saving}>{saving ? 'Enregistrement...' : editId ? 'Enregistrer' : 'Créer le client'}</Btn>
+          <div className="border-t border-[#262629] px-6 py-4">
+            {error && <p className="mb-3 rounded-lg bg-red-900/20 border border-red-800 px-3 py-2 text-xs text-red-300">{error}</p>}
+            <div className="flex justify-end gap-3">
+              <Btn variant="secondary" onClick={() => setShowModal(false)}>Annuler</Btn>
+              <Btn onClick={save} disabled={saving}>{saving ? 'Enregistrement...' : editId ? 'Enregistrer' : 'Créer le client'}</Btn>
+            </div>
           </div>
         </Modal>
       )}

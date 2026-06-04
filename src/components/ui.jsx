@@ -102,7 +102,7 @@ export function Modal({ children, onClose, size = 'md' }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.75)' }}
       onClick={e => e.target === e.currentTarget && onClose?.()}>
-      <div className={`modal-in w-full ${widths[size]} rounded-2xl border border-[#262629] bg-[#141416] shadow-2xl`}>
+      <div className={`modal-in w-full ${widths[size]} max-h-[90vh] flex flex-col rounded-2xl border border-[#262629] bg-[#141416] shadow-2xl`}>
         {children}
       </div>
     </div>

@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom'
+
 // Shared UI components
 export function Badge({ statut }) {
   const styles = {
@@ -98,14 +100,15 @@ export function TVASelect({ value, onChange }) {
 
 export function Modal({ children, onClose, size = 'md' }) {
   const widths = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.75)' }}
       onClick={e => e.target === e.currentTarget && onClose?.()}>
       <div className={`modal-in w-full ${widths[size]} max-h-[90vh] flex flex-col rounded-2xl border border-[#262629] bg-[#141416] shadow-2xl`}>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
